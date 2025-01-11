@@ -1,34 +1,51 @@
-const User = require("../models/Users");
+const myUser = require("../models/Users");
+const bcrypt = require("bcryptjs");
 
-const login = async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res
-            .status(400)
-            .json({ msg: "bad request please add email password" });
-    }
-    let foundUser = await User.findOne({ email: req.body.email });
-    if (foundUser) {
-        const isMatch = foundUser.comparePassword(password);
-        if (isMatch) {
-            const token = jwt.sign(
-                { id: foundUser._id, name: foundUser.name },
-                process.env.JWT_SECRET,
-                { expiresIn: "30d " }
-            );
-            return res.status(200).json({ msg: "user Logged in", token });
-        } else {
+const registration = async (req, res) => {
+    const { name, email, password } = req.body;
+    try {
+        const existingUser = await myUser.findOne({ email });
 
-            return res.status(400).json({ msg: "Bad password", token });
+        if (existingUser) {
+            return res.status(400).json({ message: "User Already Registered" }); // Changed status to 400 for bad request
         }
-    } else {
-        return res.status(400).json({ msg: "Bad credentails" });
-    }
 
+        // Hashing the password before saving
+        const hashPWD = await bcrypt.hash(password, 10);
+
+        const newUser = new myUser({
+            name: name,
+            email: email,
+            password: hashPWD, // Use hashed password
+        });
+
+        await newUser.save();
+        res.status(201).json({ message: "User registered successfully", data: newUser });
+    } catch (err) {
+        res.status(500).json({ message: "Server error", err });
+    }
 };
 
-// const dashboard = async () => {};
+const login = async (req, res) => {
+    const { email, password } = req.body; // Destructure email and password from req.body
 
-// const getAllUsers = async () => {};
+    try {
+        const user = await myUser.findOne({ email }); // Find user by email
+        if (!user) {
+            return res.status(400).json({ message: "Invalid email or password" }); // User not found
+        }
 
-// const register = async () => {};
+        // Compare the provided password with the hashed password in the database
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid email or password" }); // Password mismatch
+        }
+
+        // Successful login
+        res.status(200).json({ message: "You're logged in", user: { name: user.name, email: user.email } });
+    } catch (error) {
+        res.status(500).json({ message: "Internal Server error" });
+    }
+};
+
+module.exports = { registration, login };
