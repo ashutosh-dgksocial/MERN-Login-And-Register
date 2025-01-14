@@ -1,51 +1,52 @@
 const myUser = require("../models/Users");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 
-const registration = async (req, res) => {
-    const { name, email, password } = req.body;
-    try {
-        const existingUser = await myUser.findOne({ email });
+const register = async (req, res) => {
+  const { username, email, password } = req.body;
 
-        if (existingUser) {
-            return res.status(400).json({ message: "User Already Registered" }); // Changed status to 400 for bad request
-        }
-
-        // Hashing the password before saving
-        const hashPWD = await bcrypt.hash(password, 10);
-
-        const newUser = new myUser({
-            name: name,
-            email: email,
-            password: hashPWD, // Use hashed password
-        });
-
-        await newUser.save();
-        res.status(201).json({ message: "User registered successfully", data: newUser });
-    } catch (err) {
-        res.status(500).json({ message: "Server error", err });
+  try {
+    // Check if user already exists
+    const existing = await myUser.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ msg: "This email already exists in DB" });
     }
-};
+    // Hashing the password
+    const bcryptPassword = await bcrypt.hash(password, 10); // this is for hashing the password
 
+    // Creating new user instance
+    const newUser = new myUser({
+      username: username,
+      email: email,
+      password: bcryptPassword,
+    });
+
+    // Saving the new user
+    const savingUser = await newUser.save();
+
+    return res
+      .status(201)
+      .json({ msg: "User created successfully", data: savingUser });
+  } catch (error) {
+    console.error("Registration error:", error); // Log detailed error
+    return res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
 const login = async (req, res) => {
-    const { email, password } = req.body; // Destructure email and password from req.body
-
-    try {
-        const user = await myUser.findOne({ email }); // Find user by email
-        if (!user) {
-            return res.status(400).json({ message: "Invalid email or password" }); // User not found
-        }
-
-        // Compare the provided password with the hashed password in the database
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid email or password" }); // Password mismatch
-        }
-
-        // Successful login
-        res.status(200).json({ message: "You're logged in", user: { name: user.name, email: user.email } });
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server error" });
+  try {
+    const { email, password } = req.body;
+    // Check if user exists
+    const existing = await myUser.findOne({ email });
+    if (!existing) {
+      return res.status(400).json({ msg: "Invalid credentials" });
     }
+    return res.status(200).json({
+      msg: "User logged in successfully",
+      user: { username: existing.username, email: existing.email },
+    });
+  } catch (error) {
+    console.log("error", error.message);
+    return res.status(500).json({ msg: "Server error", error: error.message });
+  }
 };
 
-module.exports = { registration, login };
+module.exports = { register, login };
