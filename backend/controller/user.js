@@ -45,7 +45,7 @@ const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, existing.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+      return res.status(400).json({ msg: "Invalid credentials" });  
     }
 
     const payLoad = {
@@ -55,12 +55,11 @@ const login = async (req, res) => {
         email: existing.email,
       },
     };
-
     const token = jwt.sign(payLoad, process.env.JWT_SECRET, { expiresIn: "1h", });
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", 
       maxAge: 60 * 60 * 1000, // 1 hour expiry
       sameSite: "Strict" // for csrf cross req forgery(dhokhadhadi)
     })

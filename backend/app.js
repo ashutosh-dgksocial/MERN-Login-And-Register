@@ -3,19 +3,29 @@ require("express-async-errors");
 
 const connectDB = require("./db/connect");
 const express = require("express");
-const cors = require("cors");
 const app = express();
 const mainRouter = require("./routes/user");
+const cookieParser = require("cookie-parser");
+
+app.use(cookieParser());
 
 app.use(express.json());
 
+const cors = require("cors");
 const corsOptions = {
-    origin: "*",
+    origin: "http://localhost:5173", // Allow requests from the frontend
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    credentials: true, // Enable credentials (cookies, authorization headers, etc.)
 };
 
+// Enable CORS for all routes
 app.use(cors(corsOptions));
+
+// if (process.env.NODE_ENV === "production") {
+//     // You can enable CORS for production in a more controlled way if needed
+//     app.use(cors(corsOptions));
+// }
+
 
 app.use("/api/users", mainRouter);
 

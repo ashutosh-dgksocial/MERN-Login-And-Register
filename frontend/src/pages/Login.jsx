@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useUser } from "../context/UserContext";
 
 function Login() {
+  const { user, setUser } = useUser();
+
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+
   const url = "http://localhost:3000/api/users/login";
 
   const handleSubmit = async (e) => {
@@ -15,26 +20,21 @@ function Login() {
       return;
     }
     try {
-      const response = await axios.post(url, { email, password });
-      alert(response.data.msg || "You are logged in"); // Adjusted to 'msg'
-      console.log('the response', response.data, response.data?.user?.username)
-      // Ensure response structure matches what you expect
-      navigate("/home",
-        {
-          state: {
-            username: response.data?.user?.username,
-            email: response.data?.user?.email,
-          },
-        }
+      const response = await axios.post(
+        url,
+        { email, password },
+        { withCredentials: true }
       );
-      if (response) {
-        console.log(response);
-      }
 
-      setEmail("");
-      setPassword("");
+      setUser({
+        username: response.data.user.username,
+        email: response.data.user.email,
+      });
+
+      navigate("/profile");
     } catch (error) {
-      alert(error.response?.data?.msg || "Login failed");
+      console.error("Login error", error);
+      alert("Login failed");
     }
   };
 
@@ -44,7 +44,10 @@ function Login() {
         <h2 className="text-center text-2xl font-bold mb-4">Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               <strong>Email</strong>
             </label>
             <input
@@ -57,7 +60,10 @@ function Login() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               <strong>Password</strong>
             </label>
             <input
@@ -76,7 +82,10 @@ function Login() {
           </button>
         </form>
         <p className="mt-4 text-center">Don't have an account?</p>
-        <Link to="/register" className="block mt-2 text-center text-blue-500 hover:underline ">
+        <Link
+          to="/register"
+          className="block mt-2 text-center text-blue-500 hover:underline "
+        >
           Sign Up
         </Link>
       </div>
